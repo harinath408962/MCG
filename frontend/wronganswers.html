@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Wrong Answers — Math Calc</title>
+    <style>
+      :root {
+        font-family: Arial, Helvetica, sans-serif;
+        --primary: #3751ff;
+        --bg: #f6f8fb;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        display: flex;
+        justify-content: center;
+        padding: 20px;
+      }
+      .box {
+        width: 95%;
+        max-width: 500px;
+        padding: 20px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 6px 20px rgba(20, 20, 50, 0.08);
+      }
+      h2 {
+        margin: 0 0 15px 0;
+        color: #2b3a67;
+      }
+      .item {
+        background: #f3f5fc;
+        padding: 12px;
+        border-radius: 8px;
+        margin-bottom: 10px;
+      }
+      .q {
+        font-weight: bold;
+        margin-bottom: 6px;
+      }
+      .yours {
+        color: #b00020;
+        font-size: 14px;
+        margin-bottom: 4px;
+      }
+      .correct {
+        color: #008800;
+        font-size: 14px;
+      }
+      .btn-row {
+        display: flex;
+        gap: 10px;
+        margin-top: 15px;
+      }
+      .btn {
+        flex: 1;
+        padding: 12px;
+        background: var(--primary);
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="box">
+      <h2>Wrong Answers</h2>
+      <div id="wrongList"></div>
+
+      <div class="btn-row">
+        <button class="btn" onclick="window.location.href='result.html'">
+          Result
+        </button>
+        <button class="btn" onclick="window.location.href='home.html'">
+          Home
+        </button>
+      </div>
+    </div>
+
+    <script>
+      // Prefer wrong answers passed in gameResult; fallback to wrongAnswersList
+      const saved = localStorage.getItem("gameResult");
+      let wrongAnswers = [];
+
+      if (saved) {
+        try {
+          const result = JSON.parse(saved);
+          wrongAnswers = result.wrongAnswers || [];
+        } catch (e) {
+          // fallback
+          wrongAnswers = JSON.parse(
+            localStorage.getItem("wrongAnswersList") || "[]"
+          );
+        }
+      } else {
+        wrongAnswers = JSON.parse(
+          localStorage.getItem("wrongAnswersList") || "[]"
+        );
+      }
+
+      const list = document.getElementById("wrongList");
+      if (!Array.isArray(wrongAnswers) || wrongAnswers.length === 0) {
+        list.innerHTML = "<p>No wrong answers! 🎉</p>";
+      } else {
+        wrongAnswers.forEach((item) => {
+          const div = document.createElement("div");
+          div.className = "item";
+          div.innerHTML = `
+            <div class="q">Q: ${item.question}</div>
+            <div class="yours">Your Answer: ${item.yourAnswer}</div>
+            <div class="correct">Correct Answer: ${item.correctAnswer}</div>
+          `;
+          list.appendChild(div);
+        });
+      }
+    </script>
+  </body>
+</html>

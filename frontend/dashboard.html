@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard — Math Calc</title>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+      :root {
+        font-family: Arial, Helvetica, sans-serif;
+        --primary: #3751ff;
+        --bg: #f6f8fb;
+      }
+
+      body {
+        background: var(--bg);
+        margin: 0;
+        padding: 20px;
+        display: flex;
+        justify-content: center;
+      }
+
+      .box {
+        width: 95%;
+        max-width: 650px;
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0px 5px 20px rgba(0, 0, 0, 0.1);
+      }
+
+      h2 {
+        text-align: center;
+        color: #2b3a67;
+      }
+
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 12px;
+        margin-bottom: 20px;
+      }
+
+      .stat-card {
+        background: #f3f5fc;
+        padding: 15px;
+        text-align: center;
+        border-radius: 10px;
+      }
+
+      .stat-value {
+        font-size: 22px;
+        font-weight: bold;
+      }
+
+      .section-title {
+        margin-top: 20px;
+        margin-bottom: 5px;
+        font-size: 17px;
+        font-weight: bold;
+        color: #2b3a67;
+      }
+
+      .home-btn {
+        width: 100%;
+        padding: 12px;
+        background: var(--primary);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        margin-top: 20px;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="box">
+      <h2>Dashboard</h2>
+
+      <!-- Top Statistics -->
+      <div class="stats">
+        <div class="stat-card">
+          <div class="stat-value" id="gamesPlayed">--</div>
+          <div>Games Played</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-value" id="totalMinutes">--</div>
+          <div>Total Minutes</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-value" id="greatCount">--</div>
+          <div>Great Count ⭐</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-value" id="cheatCount">--</div>
+          <div>Cheat Count ⚠️</div>
+        </div>
+      </div>
+
+      <!-- Best Correct/min -->
+      <div class="section-title">Best Correct/min Per Mode</div>
+      <div id="bestList" style="padding-left: 10px"></div>
+
+      <!-- Mode-wise Games Chart -->
+      <div class="section-title">Mode-wise Games Played (%)</div>
+      <canvas id="gamesChart" height="160"></canvas>
+
+      <!-- Mode-wise Points Chart -->
+      <div class="section-title">Mode-wise Points Earned (%)</div>
+      <canvas id="pointsChart" height="160"></canvas>
+
+      <!-- Accuracy Chart -->
+      <div class="section-title">Accuracy Chart</div>
+      <canvas id="accuracyChart" height="160"></canvas>
+
+      <button class="home-btn" onclick="window.location.href='home.html'">
+        Home
+      </button>
+    </div>
+
+    <script>
+      // -------------------------
+      // LOAD HISTORY
+      // -------------------------
+      let history = JSON.parse(localStorage.getItem("gameHistory")) || [];
+
+      const modes = ["easy", "medium", "hard", "pro", "legend"];
+
+      // Count Stats
+      let gamesPlayed = history.length;
+      let totalMinutes = history.reduce((a, b) => a + b.time, 0);
+
+      let greatCount = history.filter((h) => h.usedCalculator === false).length;
+      let cheatCount = history.filter((h) => h.usedCalculator === true).length;
+
+      // Display Stats
+      document.getElementById("gamesPlayed").textContent = gamesPlayed;
+      document.getElementById("totalMinutes").textContent = totalMinutes;
+      document.getElementById("greatCount").textContent = greatCount;
+      document.getElementById("cheatCount").textContent = cheatCount;
+
+      // -------------------------
+      // MODE-WISE STATS
+      // -------------------------
+      let gamesCountByMode = { easy: 0, medium: 0, hard: 0, pro: 0, legend: 0 };
+      let pointsByMode = { easy: 0, medium: 0, hard: 0, pro: 0, legend: 0 };
+      let bestCPM = { easy: 0, medium: 0, hard: 0, pro: 0, legend: 0 };
+      let accuracy = { easy: 0, medium: 0, hard: 0, pro: 0, legend: 0 };
+
+      modes.forEach((m) => {
+        let filtered = history.filter((h) => h.mode === m);
+
+        gamesCountByMode[m] = filtered.length;
+        pointsByMode[m] = filtered.reduce((a, b) => a + b.points, 0);
+
+        // Best correct/min
+        filtered.forEach((f) => {
+          const cpm = Number((f.correctCount / f.time).toFixed(2));
+          if (cpm > bestCPM[m]) bestCPM[m] = cpm;
+        });
+
+        // Average accuracy
+        if (filtered.length > 0) {
+          accuracy[m] = Number(
+            (
+              filtered.reduce((a, b) => a + b.accuracy, 0) / filtered.length
+            ).toFixed(2)
+          );
+        }
+      });
+
+      // Show best CPM list
+      const bestList = document.getElementById("bestList");
+      modes.forEach((m) => {
+        bestList.innerHTML += `${m.toUpperCase()}: ${bestCPM[m]} cpm <br>`;
+      });
+
+      // -------------------------
+      // MAKE PIE DATA
+      // -------------------------
+      const gamesPie = modes.map((m) => gamesCountByMode[m]);
+      const pointsPie = modes.map((m) => pointsByMode[m]);
+      const accuracyBar = modes.map((m) => accuracy[m]);
+
+      // -------------------------
+      // DRAW CHARTS
+      // -------------------------
+
+      // Games Pie Chart
+      new Chart(document.getElementById("gamesChart"), {
+        type: "pie",
+        data: {
+          labels: modes.map((m) => m.toUpperCase()),
+          datasets: [
+            {
+              data: gamesPie,
+              backgroundColor: [
+                "#5a6cff",
+                "#00c896",
+                "#ffb347",
+                "#ff5a5a",
+                "#9b59b6",
+              ],
+            },
+          ],
+        },
+      });
+
+      // Points Pie Chart
+      new Chart(document.getElementById("pointsChart"), {
+        type: "pie",
+        data: {
+          labels: modes.map((m) => m.toUpperCase()),
+          datasets: [
+            {
+              data: pointsPie,
+              backgroundColor: [
+                "#4f79ff",
+                "#2ecc71",
+                "#f5b041",
+                "#e74c3c",
+                "#8e44ad",
+              ],
+            },
+          ],
+        },
+      });
+
+      // Accuracy Bar Chart
+      new Chart(document.getElementById("accuracyChart"), {
+        type: "bar",
+        data: {
+          labels: modes.map((m) => m.toUpperCase()),
+          datasets: [
+            {
+              label: "Accuracy (%)",
+              data: accuracyBar,
+              backgroundColor: "#3751ff",
+            },
+          ],
+        },
+        options: {
+          scales: { y: { beginAtZero: true, max: 100 } },
+        },
+      });
+    </script>
+  </body>
+</html>

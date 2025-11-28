@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Game — Math Calc</title>
+
+    <style>
+      :root {
+        font-family: Arial, Helvetica, sans-serif;
+        --primary: #3751ff;
+        --bg: #f6f8fb;
+      }
+      body {
+        background: var(--bg);
+        margin: 0;
+        padding: 20px;
+        display: flex;
+        justify-content: center;
+      }
+      .box {
+        width: 95%;
+        max-width: 500px;
+        padding: 20px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 6px 20px rgba(20, 20, 50, 0.08);
+      }
+      h2 {
+        font-size: 22px;
+        color: #2b3a67;
+        margin-bottom: 5px;
+      }
+      .sub {
+        color: #58607a;
+        font-size: 14px;
+        margin-bottom: 20px;
+      }
+      .question-area {
+        font-size: 26px;
+        font-weight: bold;
+        text-align: center;
+        padding: 20px;
+        border-radius: 10px;
+        background: #eef1f9;
+        color: #333;
+        margin-bottom: 20px;
+        min-height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .answer-input {
+        width: 100%;
+        padding: 12px;
+        font-size: 18px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        text-align: center;
+        margin-bottom: 20px;
+      }
+      .btn-row {
+        display: flex;
+        gap: 10px;
+      }
+      .btn {
+        flex: 1;
+        padding: 12px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 15px;
+      }
+      .submit-btn {
+        background: #3751ff;
+        color: white;
+      }
+      .skip-btn {
+        background: #ffd86b;
+        color: #573d00;
+      }
+      .quit-btn {
+        background: #ff5a5a;
+        color: white;
+      }
+      #timer {
+        font-size: 18px;
+        font-weight: bold;
+        margin-bottom: 15px;
+        text-align: right;
+        color: #2b3a67;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="box">
+      <h2>Math Calc — Game</h2>
+      <div class="sub" id="gameInfo">Mode: ... | Time: ...</div>
+
+      <div id="timer">Time left: --:--</div>
+
+      <div class="question-area" id="questionBox">Loading...</div>
+
+      <input
+        id="answerInput"
+        class="answer-input"
+        type="text"
+        placeholder="Your answer..."
+      />
+
+      <div class="btn-row">
+        <button class="btn submit-btn" id="submitBtn">Submit</button>
+        <button class="btn skip-btn" id="skipBtn">Skip</button>
+        <button class="btn quit-btn" id="quitBtn">Quit</button>
+      </div>
+    </div>
+
+    <script src="questionGenerator.js"></script>
+
+    <script>
+      window.onload = function () {
+        const params = new URLSearchParams(window.location.search);
+        let mode = params.get("mode");
+        const time = parseInt(params.get("time"));
+
+        if (!mode || !time) {
+          alert("Invalid game start. Select mode & time.");
+          window.location.href = "home.html";
+          return;
+        }
+
+        document.getElementById(
+          "gameInfo"
+        ).textContent = `Mode: ${mode.toUpperCase()} | Time: ${time} min`;
+
+        // --------------------------
+        // TIMER
+        // --------------------------
+        let seconds = time * 60;
+        const timerEl = document.getElementById("timer");
+
+        function format(s) {
+          const m = Math.floor(s / 60);
+          const sec = s % 60;
+          return `${m}:${sec.toString().padStart(2, "0")}`;
+        }
+
+        timerEl.textContent = "Time left: " + format(seconds);
+
+        const timer = setInterval(() => {
+          seconds--;
+          timerEl.textContent = "Time left: " + format(seconds);
+          if (seconds <= 0) {
+            clearInterval(timer);
+            endGame();
+          }
+        }, 1000);
+
+        // --------------------------
+        // GAME VARIABLES
+        // --------------------------
+        let totalQuestions = 0;
+        let correctCount = 0;
+        let wrongCount = 0;
+        let skipCount = 0;
+        let wrongAnswers = [];
+
+        let currentQ;
+        const questionBox = document.getElementById("questionBox");
+        const answerInput = document.getElementById("answerInput");
+
+        // DAILY MODE MANAGEMENT
+        let dailyList = [];
+        let dailyIndex = 0;
+        let skippedList = [];
+
+        function loadNewQuestion() {
+          // DAILY MODE
+          if (mode === "daily") {
+            // FIRST TIME → generate daily set
+            if (dailyList.length === 0) {
+              dailyList = questionGenerator.generateDailyPuzzle();
+              dailyIndex = 0;
+            }
+
+            // If reached end of 20
+            if (dailyIndex >= dailyList.length) {
+              // If no skipped questions → finish
+              if (skippedList.length === 0) {
+                endGame();
+                return;
+              }
+
+              // Restart skipped questions
+              dailyList = skippedList;
+              skippedList = [];
+              dailyIndex = 0;
+            }
+
+            currentQ = dailyList[dailyIndex];
+            dailyIndex++;
+          }
+
+          // NORMAL MODES
+          else {
+            currentQ = questionGenerator.generateQuestion(mode);
+          }
+
+          questionBox.textContent = currentQ.question;
+          answerInput.value = "";
+        }
+
+        loadNewQuestion();
+
+        // --------------------------
+        // SUBMIT
+        // --------------------------
+        document.getElementById("submitBtn").onclick = () => {
+          if (answerInput.value.trim() === "") return;
+
+          const userAns = Number(answerInput.value.trim());
+          totalQuestions++;
+
+          if (userAns === currentQ.answer) {
+            correctCount++;
+          } else {
+            wrongCount++;
+            wrongAnswers.push({
+              question: currentQ.question,
+              yourAnswer: userAns,
+              correctAnswer: currentQ.answer,
+            });
+          }
+
+          loadNewQuestion();
+        };
+
+        // --------------------------
+        // SKIP
+        // --------------------------
+        document.getElementById("skipBtn").onclick = () => {
+          skipCount++;
+          totalQuestions++;
+
+          wrongAnswers.push({
+            question: currentQ.question,
+            yourAnswer: "Skipped",
+            correctAnswer: currentQ.answer,
+          });
+
+          // daily mode → store skipped for later
+          if (mode === "daily") skippedList.push(currentQ);
+
+          loadNewQuestion();
+        };
+
+        // --------------------------
+        // QUIT
+        // --------------------------
+        document.getElementById("quitBtn").onclick = () => {
+          if (confirm("Quit game? Progress will be saved.")) {
+            endGame();
+          }
+        };
+
+        // --------------------------
+        // END GAME
+        // --------------------------
+        function endGame() {
+          clearInterval(timer);
+
+          const accuracy =
+            totalQuestions === 0
+              ? 0
+              : ((correctCount / totalQuestions) * 100).toFixed(2);
+
+          const pointTable = {
+            easy: 10,
+            medium: 25,
+            hard: 250,
+            pro: 500,
+            legend: 1000,
+            daily: 25,
+          };
+
+          const points = correctCount * pointTable[mode];
+
+          const result = {
+            mode,
+            time,
+            totalQuestions,
+            correctCount,
+            wrongCount,
+            skipCount,
+            accuracy: Number(accuracy),
+            points,
+            wrongAnswers, // <-- FIXED: attach wrong answers here
+            timestamp: Date.now(),
+            usedCalculator: false,
+          };
+
+          // -------------------------
+          // SAVE ALL MATCHES (A MODE)
+          // -------------------------
+          localStorage.setItem("gameResult", JSON.stringify(result));
+          // Save wrong answers for wronganswers.html
+
+          // Save full game result history for dashboard
+          let history = JSON.parse(localStorage.getItem("gameHistory")) || [];
+          history.push(result);
+          localStorage.setItem("gameHistory", JSON.stringify(history));
+
+          // Fair play logic
+          const thresholds = {
+            easy: 45,
+            medium: 250,
+            hard: 1000,
+            pro: 1500,
+            legend: 2000,
+          };
+          const ppm = result.points / result.time;
+          const limit = thresholds[result.mode];
+          localStorage.setItem("cheatFlag", ppm >= limit ? "true" : "false");
+          window.location.href = "result.html";
+        }
+      };
+    </script>
+  </body>
+</html>

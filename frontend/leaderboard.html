@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Leaderboard — Math Calc Game</title>
+
+    <style>
+      :root {
+        font-family: Arial, Helvetica, sans-serif;
+        --primary: #3751ff;
+        --bg: #f6f8fb;
+        --tab-bg: #e7e9f5;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        display: flex;
+        justify-content: center;
+        padding: 20px;
+      }
+      .box {
+        width: 95%;
+        max-width: 850px;
+        padding: 20px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 6px 20px rgba(20, 20, 50, 0.1);
+      }
+      h2 {
+        margin-top: 0;
+        color: #2b3a67;
+        text-align: center;
+      }
+      .tabs {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 15px;
+        flex-wrap: wrap;
+      }
+      .tab {
+        padding: 10px 14px;
+        background: var(--tab-bg);
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 14px;
+        color: #333;
+      }
+      .tab.active {
+        background: var(--primary);
+        color: white;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+      }
+      thead {
+        background: #f3f5fc;
+      }
+      th,
+      td {
+        padding: 10px;
+        border-bottom: 1px solid #ddd;
+        font-size: 14px;
+        text-align: left;
+      }
+      .home-btn {
+        padding: 8px 14px;
+        background: var(--primary);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        float: right;
+      }
+      .small-note {
+        color: #666;
+        font-size: 13px;
+        margin-top: 6px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="box">
+      <div style="position: relative; margin-bottom: 8px">
+        <h2 style="margin: 0; position: relative; display: inline-block">
+          Leaderboard
+        </h2>
+        <button class="home-btn" onclick="window.location.href='home.html'">
+          Home
+        </button>
+      </div>
+
+      <div class="tabs" id="tabs">
+        <div class="tab active" data-tab="bestScores">Best Scores</div>
+        <div class="tab" data-tab="modeRank">Mode-wise</div>
+        <div class="tab" data-tab="totalRank">Total Points</div>
+        <div class="tab" data-tab="dailyRank">Daily Puzzle</div>
+      </div>
+
+      <!-- BEST SCORES (single-match best correct/min per user-mode) -->
+      <div id="bestScores" class="table-box">
+        <h3 style="margin: 6px 0">
+          Best Scores (Best single-match correct/min)
+        </h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Mode</th>
+              <th>User</th>
+              <th>Correct / min</th>
+              <th>Points</th>
+            </tr>
+          </thead>
+          <tbody id="bestTable"></tbody>
+        </table>
+        <div class="small-note">
+          Shows each user's best single-match performance (correct per minute).
+        </div>
+      </div>
+
+      <!-- MODE-WISE (detailed recent matches) -->
+      <div id="modeRank" class="table-box" style="display: none">
+        <h3 style="margin: 6px 0">Mode-wise Recent Matches</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Mode</th>
+              <th>Time (min)</th>
+              <th>Correct</th>
+              <th>Points</th>
+            </tr>
+          </thead>
+          <tbody id="modeTable"></tbody>
+        </table>
+        <div class="small-note">
+          List of recent matches from history (most recent first).
+        </div>
+      </div>
+
+      <!-- TOTAL POINTS -->
+      <div id="totalRank" class="table-box" style="display: none">
+        <h3 style="margin: 6px 0">Total Points (aggregate per user)</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>User</th>
+              <th>Total Points</th>
+            </tr>
+          </thead>
+          <tbody id="totalTable"></tbody>
+        </table>
+        <div class="small-note">
+          Aggregated points per user across saved history.
+        </div>
+      </div>
+
+      <!-- DAILY PUZZLE -->
+      <div id="dailyRank" class="table-box" style="display: none">
+        <h3 style="margin: 6px 0">Daily Puzzle — Today</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>User</th>
+              <th>Points</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="dailyTable"></tbody>
+        </table>
+        <div class="small-note">
+          Shows today's daily puzzle results (if any). Uses local history
+          timestamp to decide 'today'.
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // read history (same key dashboard uses)
+      const history = JSON.parse(localStorage.getItem("gameHistory") || "[]")
+        .slice()
+        .reverse(); // most recent first
+
+      // ---------- Best single-match per mode (per user) ----------
+      // For now we don't have user identities — use 'anonymous' or stored user in localStorage
+      const currentUser =
+        (JSON.parse(localStorage.getItem("user") || "null") || {}).name ||
+        "You";
+
+      // Build best per (mode, user). If user system later added, this code can be expanded.
+      const bestEntries = {}; // key: mode + '::' + user
+      history.forEach((entry) => {
+        const userName =
+          (entry.user && entry.user.name) || entry.userName || currentUser;
+        const mode = entry.mode || "unknown";
+        const time = Number(entry.time) || 1;
+        const correct = Number(entry.correctCount) || 0;
+        const cpm = time > 0 ? correct / time : 0; // correct/min
+        const key = mode + "::" + userName;
+        if (!bestEntries[key] || cpm > bestEntries[key].cpm) {
+          bestEntries[key] = {
+            mode,
+            user: userName,
+            cpm,
+            points: entry.points || 0,
+            savedAt: entry.savedAt || 0,
+          };
+        }
+      });
+
+      const bestTable = document.getElementById("bestTable");
+      bestTable.innerHTML = "";
+      // sort by mode then by cpm desc
+      const bestList = Object.values(bestEntries);
+      bestList.sort((a, b) => b.cpm - a.cpm);
+      bestList.forEach((row) => {
+        bestTable.innerHTML += `<tr>
+          <td>${row.mode.toUpperCase()}</td>
+          <td>${row.user}</td>
+          <td>${row.cpm.toFixed(2)}</td>
+          <td>${row.points}</td>
+        </tr>`;
+      });
+      if (bestList.length === 0)
+        bestTable.innerHTML = `<tr><td colspan="4">No data yet</td></tr>`;
+
+      // ---------- Mode-wise recent matches (list matches) ----------
+      const modeTable = document.getElementById("modeTable");
+      modeTable.innerHTML = "";
+      if (history.length === 0) {
+        modeTable.innerHTML =
+          "<tr><td colspan='5'>No matches played yet</td></tr>";
+      } else {
+        history.forEach((r, idx) => {
+          modeTable.innerHTML += `<tr>
+            <td>${idx + 1}</td>
+            <td>${(r.mode || "").toUpperCase()}</td>
+            <td>${r.time || 0}</td>
+            <td>${r.correctCount || 0}</td>
+            <td>${r.points || 0}</td>
+          </tr>`;
+        });
+      }
+
+      // ---------- Total points aggregated per user ----------
+      const totals = {};
+      history.forEach((r) => {
+        const userName = (r.user && r.user.name) || r.userName || currentUser;
+        totals[userName] = (totals[userName] || 0) + (Number(r.points) || 0);
+      });
+
+      const totalTable = document.getElementById("totalTable");
+      totalTable.innerHTML = "";
+      const totalRows = Object.entries(totals).sort((a, b) => b[1] - a[1]);
+      if (totalRows.length === 0) {
+        totalTable.innerHTML = "<tr><td colspan='3'>No data</td></tr>";
+      } else {
+        totalRows.forEach((row, i) => {
+          totalTable.innerHTML += `<tr><td>${i + 1}</td><td>${row[0]}</td><td>${
+            row[1]
+          }</td></tr>`;
+        });
+      }
+
+      // ---------- Daily puzzle (today) ----------
+      const dailyTable = document.getElementById("dailyTable");
+      dailyTable.innerHTML = "";
+      // define 'today' by local date string
+      const todayKey = new Date().toDateString();
+      const dailyMatches = history.filter(
+        (r) =>
+          r.mode === "daily" && new Date(r.savedAt).toDateString() === todayKey
+      );
+      if (dailyMatches.length === 0) {
+        dailyTable.innerHTML =
+          "<tr><td colspan='4'>No daily puzzle played today</td></tr>";
+      } else {
+        dailyMatches.forEach((m, i) => {
+          const userName = (m.user && m.user.name) || m.userName || currentUser;
+          dailyTable.innerHTML += `<tr><td>${
+            i + 1
+          }</td><td>${userName}</td><td>${m.points || 0}</td><td>${
+            m.fairStatus || "unknown"
+          }</td></tr>`;
+        });
+      }
+
+      // ---------- Tab switching ----------
+      const tabs = document.querySelectorAll(".tab");
+      const sections = {
+        bestScores: document.getElementById("bestScores"),
+        modeRank: document.getElementById("modeRank"),
+        totalRank: document.getElementById("totalRank"),
+        dailyRank: document.getElementById("dailyRank"),
+      };
+      tabs.forEach((tab) => {
+        tab.onclick = () => {
+          tabs.forEach((t) => t.classList.remove("active"));
+          tab.classList.add("active");
+          const id = tab.dataset.tab;
+          for (const s in sections)
+            sections[s].style.display = s === id ? "block" : "none";
+        };
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>About — Math Calc Game</title>
+
+    <style>
+      :root {
+        font-family: Arial, Helvetica, sans-serif;
+        --primary: #3751ff;
+        --bg: #f6f8fb;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        display: flex;
+        justify-content: center;
+        padding: 20px;
+      }
+      .box {
+        width: 95%;
+        max-width: 650px;
+        padding: 20px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 6px 20px rgba(20, 20, 50, 0.1);
+      }
+
+      /* Heading */
+      h2 {
+        margin: 0;
+        text-align: center;
+        color: #2b3a67;
+      }
+
+      /* Sections */
+      .section {
+        margin-top: 15px;
+      }
+      .title {
+        font-weight: 700;
+        font-size: 18px;
+        margin-bottom: 6px;
+        color: #2b3a67;
+      }
+      .text {
+        font-size: 14px;
+        color: #444;
+        line-height: 1.6;
+      }
+
+      /* Lists */
+      ul {
+        background: #f3f5fc;
+        padding: 12px;
+        border-radius: 10px;
+      }
+      ul li {
+        font-size: 14px;
+        margin-bottom: 5px;
+      }
+
+      /* Home Button */
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+      }
+      .home-btn {
+        padding: 8px 14px;
+        background: var(--primary);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="box">
+      <!-- Header -->
+      <div class="header" style="position: relative; margin-bottom: 15px">
+        <!-- Centered Heading Box -->
+        <div
+          style="
+            background: #56cced;
+            padding: 10px 16px;
+            border-radius: 8px;
+            border: 1px solid #ccecf5;
+            width: max-content;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+          "
+        >
+          <h2 style="margin: 0; color: rgb(8, 160, 10)">About Game</h2>
+        </div>
+
+        <!-- Home Button on Right -->
+        <button
+          class="home-btn"
+          onclick="window.location.href='home.html'"
+          style="float: right"
+        >
+          Home
+        </button>
+      </div>
+
+      <!-- INTRO -->
+      <div class="section">
+        <div class="title">What is Math Calc Game?</div>
+        <div class="text">
+          Math Calc Game is a fast-paced mathematics challenge where you solve
+          questions across 5 difficulty modes. Your goal is to answer accurately
+          and quickly to score maximum points.
+        </div>
+      </div>
+
+      <!-- MODES -->
+      <div class="section">
+        <div class="title">Modes & Number Ranges</div>
+        <ul>
+          <li><b>Easy:</b> 1 – 10</li>
+          <li><b>Medium:</b> 10 – 100</li>
+          <li><b>Hard:</b> 100 – 1,000</li>
+          <li><b>Pro:</b> 1,000 – 10,000</li>
+          <li><b>Legend:</b> 10,000 – 1,00,000</li>
+        </ul>
+      </div>
+
+      <!-- POINTS -->
+      <div class="section">
+        <div class="title">Points System</div>
+        <ul>
+          <li>Easy → +10 points</li>
+          <li>Medium → +25 points</li>
+          <li>Hard → +250 points</li>
+          <li>Pro → +500 points</li>
+          <li>Legend → +1000 points</li>
+        </ul>
+      </div>
+
+      <!-- DAILY PUZZLE -->
+      <div class="section">
+        <div class="title">Daily Puzzle Rules</div>
+        <ul>
+          <li>1 game per day</li>
+          <li>Same questions for all users</li>
+          <li>Total 20 questions (4 from each mode)</li>
+          <li>Fixed time: 3 minutes</li>
+          <li>Skipped questions appear again after completion</li>
+        </ul>
+      </div>
+
+      <!-- FAIR PLAY -->
+      <div class="section">
+        <div class="title">Fair Play Warning</div>
+        <div class="text">
+          If your score per minute is unusually high, a warning will appear:
+        </div>
+        <ul>
+          <li>Easy ≥ 45 points/min</li>
+          <li>Medium ≥ 250 points/min</li>
+          <li>Hard ≥ 1000 points/min</li>
+          <li>Pro ≥ 1500 points/min</li>
+          <li>Legend ≥ 2000 points/min</li>
+        </ul>
+        <div class="text">
+          You must confirm whether it was a fair game or if you used a
+          calculator.
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

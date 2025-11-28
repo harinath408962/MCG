@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Results — Math Calc Game</title>
+    <style>
+      :root {
+        font-family: Arial, Helvetica, sans-serif;
+        --primary: #3751ff;
+        --warning: #ffa600;
+        --danger: #ff4e4e;
+        --bg: #f6f8fb;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        display: flex;
+        justify-content: center;
+        padding: 20px;
+      }
+      .box {
+        width: 95%;
+        max-width: 500px;
+        padding: 20px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 6px 20px rgba(20, 20, 50, 0.08);
+      }
+      h2 {
+        color: #2b3a67;
+        margin-bottom: 5px;
+      }
+      .item {
+        font-size: 15px;
+        padding: 4px 0;
+        color: #333;
+      }
+      .btn {
+        width: 100%;
+        padding: 12px;
+        margin-top: 15px;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        font-size: 16px;
+      }
+      .home-btn {
+        background: var(--primary);
+        color: white;
+      }
+      .wrong-btn {
+        background: #ffd86b;
+        color: #573d00;
+      }
+
+      /* FAIR POPUP */
+      #fairPopup {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.45);
+        display: none;
+        justify-content: center;
+        align-items: center;
+      }
+      .popup-box {
+        width: 90%;
+        max-width: 420px;
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        text-align: center;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+      }
+      .popup-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: #2b3a67;
+        margin-bottom: 16px;
+      }
+      .popup-btn {
+        width: 46%;
+        padding: 10px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        font-weight: 700;
+        font-size: 14px;
+        margin: 6px;
+      }
+      .fair-btn {
+        background: #37c12f;
+        color: white;
+      }
+      .calc-btn {
+        background: var(--warning);
+        color: white;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="box">
+      <h2>Your Results</h2>
+
+      <div class="item" id="modeInfo">Mode: --</div>
+      <div class="item" id="timeInfo">Time: -- mins</div>
+      <div class="item" id="attemptedInfo">Questions Attempted: --</div>
+      <div class="item" id="correctInfo">Correct: --</div>
+      <div class="item" id="wrongInfo">Wrong: --</div>
+      <div class="item" id="skipInfo">Skipped: --</div>
+      <div class="item" id="accuracyInfo">Accuracy: --%</div>
+      <div class="item" id="pointsInfo">Points: --</div>
+      <div class="item" id="avgTimeInfo">Avg Time per Answer: -- sec</div>
+
+      <button class="btn wrong-btn" id="showWrong">Show Wrong Answers</button>
+      <button class="btn home-btn" onclick="window.location.href='home.html'">
+        Home
+      </button>
+    </div>
+
+    <!-- FAIRNESS POPUP -->
+    <div id="fairPopup">
+      <div class="popup-box">
+        <div class="popup-title">
+          It is very hard to score this result.<br />Did you play fair?
+        </div>
+        <div>
+          <button class="popup-btn fair-btn" id="fairBtn">Fair Game</button>
+          <button class="popup-btn calc-btn" id="calcBtn">
+            Used Calculator
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // thresholds (points per minute)
+      const thresholds = {
+        easy: 45,
+        medium: 250,
+        hard: 1000,
+        pro: 1500,
+        legend: 2000,
+      };
+
+      // read the immediate result saved by game page
+      const result = JSON.parse(localStorage.getItem("gameResult"));
+
+      if (!result) {
+        alert("No game results found. Play a game first.");
+        window.location.href = "home.html";
+        throw new Error("No gameResult");
+      }
+
+      // --- Manage / persist history without duplicating ---
+      const historyKey = "gameHistory";
+      const rawHistory = JSON.parse(localStorage.getItem(historyKey) || "[]");
+
+      // We'll treat the "last" entry as the one we may update with fairStatus.
+      // To avoid duplicate pushes: compare the last entry (by select keys).
+      function isSameResult(a, b) {
+        if (!a || !b) return false;
+        return (
+          a.mode === b.mode &&
+          a.time === b.time &&
+          a.totalQuestions === b.totalQuestions &&
+          a.correctCount === b.correctCount &&
+          a.points === b.points
+        );
+      }
+
+      let history = rawHistory;
+      // If history empty or last != result → push result (add timestamp & fairStatus)
+      if (
+        history.length === 0 ||
+        !isSameResult(history[history.length - 1], result)
+      ) {
+        const toSave = Object.assign({}, result, {
+          savedAt: Date.now(),
+          fairStatus: "unknown",
+        });
+        history.push(toSave);
+        localStorage.setItem(historyKey, JSON.stringify(history));
+      }
+
+      // Use the "active" result reference to update fairStatus later
+      const activeIndex = history.length - 1;
+      const activeEntry = history[activeIndex];
+
+      // Fill UI from current result
+      document.getElementById(
+        "modeInfo"
+      ).textContent = `Mode: ${result.mode.toUpperCase()}`;
+      document.getElementById(
+        "timeInfo"
+      ).textContent = `Time: ${result.time} mins`;
+      document.getElementById(
+        "attemptedInfo"
+      ).textContent = `Questions Attempted: ${result.totalQuestions}`;
+      document.getElementById(
+        "correctInfo"
+      ).textContent = `Correct: ${result.correctCount}`;
+      document.getElementById(
+        "wrongInfo"
+      ).textContent = `Wrong: ${result.wrongCount}`;
+      document.getElementById(
+        "skipInfo"
+      ).textContent = `Skipped: ${result.skipCount}`;
+      document.getElementById(
+        "accuracyInfo"
+      ).textContent = `Accuracy: ${result.accuracy}%`;
+      document.getElementById(
+        "pointsInfo"
+      ).textContent = `Points: ${result.points}`;
+
+      const avgTime =
+        result.totalQuestions > 0
+          ? ((result.time * 60) / result.totalQuestions).toFixed(2)
+          : "0.00";
+      document.getElementById(
+        "avgTimeInfo"
+      ).textContent = `Avg Time per Answer: ${avgTime} sec`;
+
+      // Save wrong answers separately for wronganswers.html (keeps old behavior)
+      localStorage.setItem(
+        "wrongAnswersList",
+        JSON.stringify(result.wrongAnswers || [])
+      );
+
+      // FAIRNESS check: only show when result.mode != 'daily' and fairStatus unknown and ppm >= threshold
+      (function checkFairPopup() {
+        if (result.mode === "daily") return; // skip daily
+        const threshold = thresholds[result.mode];
+        if (!threshold) return; // unknown mode
+
+        const ppm = result.points / result.time; // points per minute
+        // Only prompt if we haven't already asked the player about this run
+        if (activeEntry.fairStatus === "unknown" && ppm >= threshold) {
+          document.getElementById("fairPopup").style.display = "flex";
+        }
+      })();
+
+      // Fair/Cheat handlers — update history and localStorage
+      document.getElementById("fairBtn").onclick = () => {
+        history[activeIndex].fairStatus = "fair";
+        localStorage.setItem(historyKey, JSON.stringify(history));
+        localStorage.setItem("fairStatus", "fair");
+        document.getElementById("fairPopup").style.display = "none";
+        // Update derived dashboard stats now (dashboard reads from history)
+        alert("Marked as Fair Game (saved).");
+      };
+
+      document.getElementById("calcBtn").onclick = () => {
+        history[activeIndex].fairStatus = "cheated";
+        localStorage.setItem(historyKey, JSON.stringify(history));
+        localStorage.setItem("fairStatus", "cheated");
+        document.getElementById("fairPopup").style.display = "none";
+        alert("Marked as Used Calculator (saved).");
+      };
+
+      // show wrong answers navigation
+      document.getElementById("showWrong").onclick = () => {
+        window.location.href = "wronganswers.html";
+      };
+
+      // (Optional) you can also update a compact 'userStats' object here if desired
+      // But dashboard recomputes from gameHistory so it's not strictly required.
+    </script>
+  </body>
+</html>

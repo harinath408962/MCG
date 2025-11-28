@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Daily Puzzle — Math Calc</title>
+
+    <!-- <link rel="stylesheet" href="styles.css"> -->
+
+    <style>
+      :root {
+        font-family: Arial, Helvetica, sans-serif;
+        --primary: #3751ff;
+        --bg: #f6f8fb;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        display: flex;
+        justify-content: center;
+        padding: 20px;
+      }
+      .box {
+        width: 95%;
+        max-width: 500px;
+        padding: 20px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 6px 20px rgba(20, 20, 50, 0.1);
+      }
+      h2 {
+        color: #2b3a67;
+        margin-bottom: 10px;
+      }
+      p {
+        font-size: 14px;
+        color: #444;
+      }
+      ul {
+        background: #f3f5fc;
+        padding: 12px;
+        border-radius: 10px;
+        font-size: 14px;
+      }
+      .btn {
+        width: 100%;
+        padding: 12px;
+        margin-top: 20px;
+        border: none;
+        border-radius: 8px;
+        background: var(--primary);
+        color: #fff;
+        font-weight: 600;
+        font-size: 16px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="box">
+      <h2>Daily Puzzle 🔥</h2>
+
+      <p>Challenge yourself with a new puzzle set every day!</p>
+
+      <ul>
+        <li>Only 1 game per day</li>
+        <li>Same questions for all users</li>
+        <li>3-minute fixed timer</li>
+        <li>Total 20 questions</li>
+        <li>Order: 4 Easy → 4 Medium → 4 Hard → 4 Pro → 4 Legend</li>
+        <li>After finishing all, skipped questions appear again</li>
+      </ul>
+
+      <button class="btn" id="startDaily">Start Daily Puzzle</button>
+    </div>
+
+    <script>
+      document.getElementById("startDaily").onclick = () => {
+        // Redirect to daily game instance
+        window.location.href = "game.html?mode=daily&time=3";
+      };
+    </script>
+  </body>
+</html>
